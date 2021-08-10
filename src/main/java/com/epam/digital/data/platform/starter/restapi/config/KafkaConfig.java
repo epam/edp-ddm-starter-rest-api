@@ -1,6 +1,7 @@
 package com.epam.digital.data.platform.starter.restapi.config;
 
 import com.epam.digital.data.platform.starter.restapi.config.properties.KafkaProperties;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -82,6 +83,7 @@ public class KafkaConfig {
     replyContainer.getContainerProperties().setGroupId(UUID.randomUUID().toString());
     ReplyingKafkaTemplate<String, I, O> kafkaTemplate = new ReplyingKafkaTemplate<>(pf, replyContainer);
     kafkaTemplate.setSharedReplyTopic(true);
+    kafkaTemplate.setDefaultReplyTimeout(Duration.ofSeconds(30L));
     return kafkaTemplate;
   }
 
@@ -117,7 +119,7 @@ public class KafkaConfig {
     DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate);
     ExponentialBackOff backOff = new ExponentialBackOff(
         kafkaProperties.getErrorHandler().getInitialInterval(),
-        kafkaProperties.getErrorHandler().getMaxElapsedTime());
+        kafkaProperties.getErrorHandler().getMultiplier());
     backOff.setMaxElapsedTime(kafkaProperties.getErrorHandler().getMaxElapsedTime());
     return new SeekToCurrentErrorHandler(recoverer, backOff);
   }
