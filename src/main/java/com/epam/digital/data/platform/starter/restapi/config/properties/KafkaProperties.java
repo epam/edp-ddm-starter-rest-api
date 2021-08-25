@@ -15,6 +15,7 @@ public class KafkaProperties {
   private Map<String, Handler> topics;
   private ErrorHandler errorHandler = new ErrorHandler();
   private List<String> trustedPackages;
+  private SslProperties ssl;
 
   public List<String> getTrustedPackages() {
     return trustedPackages;
@@ -63,6 +64,15 @@ public class KafkaProperties {
   public void setTopics(
       Map<String, Handler> topics) {
     this.topics = topics;
+  }
+
+  public SslProperties getSsl() {
+    return ssl;
+  }
+
+  public void setSsl(
+      SslProperties ssl) {
+    this.ssl = ssl;
   }
 
   public static class Handler {
@@ -168,6 +178,46 @@ public class KafkaProperties {
 
     public void setWrite(Integer write) {
       this.write = write;
+    }
+  }
+
+  public static class SslProperties {
+
+    private Boolean enabled;
+    private String keystoreKey;
+    private String keystoreCertificate;
+    private String truststoreCertificate;
+
+    public Boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getKeystoreKey() {
+      return keystoreKey;
+    }
+
+    public void setKeystoreKey(String keystoreKey) {
+      this.keystoreKey = keystoreKey;
+    }
+
+    public String getKeystoreCertificate() {
+      return keystoreCertificate;
+    }
+
+    public void setKeystoreCertificate(String keystoreCertificate) {
+      this.keystoreCertificate = keystoreCertificate;
+    }
+
+    public String getTruststoreCertificate() {
+      return truststoreCertificate;
+    }
+
+    public void setTruststoreCertificate(String truststoreCertificate) {
+      this.truststoreCertificate = truststoreCertificate;
     }
   }
 }

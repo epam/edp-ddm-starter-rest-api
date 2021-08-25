@@ -5,11 +5,12 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.KafkaAdminClient;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,12 @@ import org.springframework.util.backoff.ExponentialBackOff;
 @EnableConfigurationProperties(KafkaProperties.class)
 public class KafkaConfig {
 
+  private static final String CERTIFICATES_TYPE = "PEM";
+  private static final String SECURITY_PROTOCOL = "SSL";
+  public static final String SSL_TRUSTSTORE_CERTIFICATES = "ssl.truststore.certificates";
+  public static final String SSL_KEYSTORE_CERTIFICATE_CHAIN = "ssl.keystore.certificate.chain";
+  public static final String SSL_KEYSTORE_KEY = "ssl.keystore.key";
+
   @Autowired
   KafkaProperties kafkaProperties;
 
@@ -47,8 +54,11 @@ public class KafkaConfig {
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     props.put(
         JsonDeserializer.TRUSTED_PACKAGES,
-        kafkaProperties.getTrustedPackages().stream().collect(Collectors.joining(",")));
+        String.join(",", kafkaProperties.getTrustedPackages()));
     props.put(ConsumerConfig.GROUP_ID_CONFIG, kafkaProperties.getGroupId());
+    if (kafkaProperties.getSsl().isEnabled()) {
+      props.putAll(createSslProperties());
+    }
     return props;
   }
 
@@ -58,7 +68,21 @@ public class KafkaConfig {
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrap());
     props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+    if (kafkaProperties.getSsl().isEnabled()) {
+      props.putAll(createSslProperties());
+    }
     return props;
+  }
+
+  private Map<String, Object> createSslProperties() {
+    return Map.of(
+        CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SECURITY_PROTOCOL,
+        SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, CERTIFICATES_TYPE,
+        SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, CERTIFICATES_TYPE,
+        SSL_TRUSTSTORE_CERTIFICATES, kafkaProperties.getSsl().getTruststoreCertificate(),
+        SSL_KEYSTORE_CERTIFICATE_CHAIN, kafkaProperties.getSsl().getKeystoreCertificate(),
+        SSL_KEYSTORE_KEY, kafkaProperties.getSsl().getKeystoreKey()
+    );
   }
 
   @Bean
