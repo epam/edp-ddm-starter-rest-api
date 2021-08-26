@@ -24,12 +24,12 @@ public class StartupKafkaTopicsCreator {
   private static final String READ = "read";
   private static final String SEARCH = "search";
 
-  private final AdminClient adminClient;
+  private final AdminClient kafkaAdminClient;
   private final KafkaProperties kafkaProperties;
 
-  public StartupKafkaTopicsCreator(AdminClient adminClient,
+  public StartupKafkaTopicsCreator(AdminClient kafkaAdminClient,
       KafkaProperties kafkaProperties) {
-    this.adminClient = adminClient;
+    this.kafkaAdminClient = kafkaAdminClient;
     this.kafkaProperties = kafkaProperties;
   }
 
@@ -39,7 +39,7 @@ public class StartupKafkaTopicsCreator {
 
     Set<String> missingTopicNames = getMissingTopicNames(maxElapsedTime);
 
-    var createTopicsResult = adminClient.createTopics(getNewTopics(missingTopicNames));
+    var createTopicsResult = kafkaAdminClient.createTopics(getNewTopics(missingTopicNames));
     try {
       createTopicsResult.all().get(maxElapsedTime, TimeUnit.MILLISECONDS);
     } catch (Exception e) {
@@ -50,7 +50,7 @@ public class StartupKafkaTopicsCreator {
   private Set<String> getMissingTopicNames(long maxElapsedTime) {
     Set<String> existingTopics;
     try {
-      existingTopics = adminClient.listTopics().names().get(maxElapsedTime, TimeUnit.MILLISECONDS);
+      existingTopics = kafkaAdminClient.listTopics().names().get(maxElapsedTime, TimeUnit.MILLISECONDS);
     } catch (Exception e) {
       throw new CreateKafkaTopicException("Failed to retrieve existing kafka topics: ", e);
     }
