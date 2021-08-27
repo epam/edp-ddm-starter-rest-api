@@ -135,6 +135,9 @@ public class KafkaConfig {
   public AdminClient kafkaAdminClient() {
     Map<String, Object> props = new HashMap<>();
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrap());
+    if (kafkaProperties.getSsl().isEnabled()) {
+      props.putAll(createSslProperties());
+    }
     return KafkaAdminClient.create(props);
   }
 
