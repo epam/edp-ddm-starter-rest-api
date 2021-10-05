@@ -1,5 +1,6 @@
 package com.epam.digital.data.platform.starter.restapi.config.properties;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -16,6 +17,8 @@ public class KafkaProperties {
   private ErrorHandler errorHandler = new ErrorHandler();
   private List<String> trustedPackages;
   private SslProperties ssl;
+  private Map<String, Object> producerConfigs = new HashMap<>();
+  private Map<String, Object> consumerConfigs = new HashMap<>();
 
   public List<String> getTrustedPackages() {
     return trustedPackages;
@@ -73,6 +76,22 @@ public class KafkaProperties {
   public void setSsl(
       SslProperties ssl) {
     this.ssl = ssl;
+  }
+
+  public Map<String, Object> getProducerConfigs() {
+    return producerConfigs;
+  }
+
+  public void setProducerConfigs(Map<String, Object> producerConfigs) {
+    this.producerConfigs = producerConfigs;
+  }
+
+  public Map<String, Object> getConsumerConfigs() {
+    return consumerConfigs;
+  }
+
+  public void setConsumerConfigs(Map<String, Object> consumerConfigs) {
+    this.consumerConfigs = consumerConfigs;
   }
 
   public static class Handler {

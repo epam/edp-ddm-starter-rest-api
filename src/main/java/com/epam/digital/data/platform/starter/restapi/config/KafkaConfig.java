@@ -59,6 +59,7 @@ public class KafkaConfig {
     if (kafkaProperties.getSsl().isEnabled()) {
       props.putAll(createSslProperties());
     }
+    props.putAll(kafkaProperties.getConsumerConfigs());
     return props;
   }
 
@@ -71,6 +72,7 @@ public class KafkaConfig {
     if (kafkaProperties.getSsl().isEnabled()) {
       props.putAll(createSslProperties());
     }
+    props.putAll(kafkaProperties.getProducerConfigs());
     return props;
   }
 
