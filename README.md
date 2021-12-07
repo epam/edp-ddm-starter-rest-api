@@ -5,3 +5,6 @@ This starter provides basic configuration, required for rest-api microservices (
 ### Usage
 ###### Configuration
 * `data-platform.kafka` - Kafka configuration (`KafkaProperties` class)
+
+### License
+ddm-starter-rest-api is Open Source software released under the Apache 2.0 license.
