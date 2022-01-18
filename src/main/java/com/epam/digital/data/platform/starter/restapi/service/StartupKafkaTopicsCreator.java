@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -42,31 +43,24 @@ public class StartupKafkaTopicsCreator {
   private static final String READ = "read";
   private static final String SEARCH = "search";
 
-  private final AdminClient kafkaAdminClient;
+  private final Supplier<AdminClient> adminClientFactory;
   private final KafkaProperties kafkaProperties;
 
-  public StartupKafkaTopicsCreator(AdminClient kafkaAdminClient,
-      KafkaProperties kafkaProperties) {
-    this.kafkaAdminClient = kafkaAdminClient;
+  public StartupKafkaTopicsCreator(
+          Supplier<AdminClient> adminClientFactory, KafkaProperties kafkaProperties) {
+    this.adminClientFactory = adminClientFactory;
     this.kafkaProperties = kafkaProperties;
   }
 
   @PostConstruct
   public void createKafkaTopics() {
-
-    Set<String> missingTopicNames = getMissingTopicNames();
-
-    var createTopicsResult = kafkaAdminClient.createTopics(getNewTopics(missingTopicNames));
-    try {
-      createTopicsResult.all().get(TOPIC_CREATION_TIMEOUT, TimeUnit.SECONDS);
-    } catch (Exception e) {
-      throw new CreateKafkaTopicException(
-          String.format("Failed to create kafka topics %s in %d sec", missingTopicNames,
-              TOPIC_CREATION_TIMEOUT), e);
+    try (var kafkaAdminClient = adminClientFactory.get()) {
+      var missingTopicNames = getMissingTopicNames(kafkaAdminClient);
+      createTopics(missingTopicNames, kafkaAdminClient);
     }
   }
 
-  private Set<String> getMissingTopicNames() {
+  private Set<String> getMissingTopicNames(AdminClient kafkaAdminClient) {
     Set<String> existingTopics;
     try {
       existingTopics = kafkaAdminClient.listTopics().names()
@@ -88,6 +82,19 @@ public class StartupKafkaTopicsCreator {
       requiredTopics.add(e.getValue().getReplay());
     }
     return requiredTopics;
+  }
+
+  private void createTopics(Set<String> topicNames, AdminClient kafkaAdminClient) {
+    var createTopicsResult = kafkaAdminClient.createTopics(getNewTopics(topicNames));
+    try {
+      createTopicsResult.all().get(TOPIC_CREATION_TIMEOUT, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      throw new CreateKafkaTopicException(
+              String.format(
+                      "Failed to create kafka topics %s in %d sec",
+                      topicNames, TOPIC_CREATION_TIMEOUT),
+              e);
+    }
   }
 
   private Collection<NewTopic> getNewTopics(Set<String> requiredTopics) {

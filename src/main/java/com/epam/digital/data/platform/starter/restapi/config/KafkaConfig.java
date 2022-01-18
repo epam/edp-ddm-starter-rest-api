@@ -21,9 +21,10 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
+
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.KafkaAdminClient;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.SslConfigs;
@@ -150,13 +151,17 @@ public class KafkaConfig {
   }
 
   @Bean
-  public AdminClient kafkaAdminClient() {
+  public Supplier<AdminClient> adminClientFactory() {
+    return this::kafkaAdminClient;
+  }
+
+  private AdminClient kafkaAdminClient() {
     Map<String, Object> props = new HashMap<>();
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrap());
     if (kafkaProperties.getSsl().isEnabled()) {
       props.putAll(createSslProperties());
     }
-    return KafkaAdminClient.create(props);
+    return AdminClient.create(props);
   }
 
   private SeekToCurrentErrorHandler deadLetterErrorHandler(

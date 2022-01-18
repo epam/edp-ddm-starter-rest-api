@@ -87,7 +87,7 @@ class StartupKafkaTopicsCreatorTest {
   @BeforeEach
   void setup() {
     kafkaProperties = createKafkaProperties(topicsRootName);
-    startupKafkaTopicsCreator = new StartupKafkaTopicsCreator(adminClient, kafkaProperties);
+    startupKafkaTopicsCreator = new StartupKafkaTopicsCreator(() -> adminClient, kafkaProperties);
   }
 
   @Test
@@ -118,7 +118,7 @@ class StartupKafkaTopicsCreatorTest {
 
     // given
     kafkaProperties = createKafkaProperties(topicsRootName);
-    startupKafkaTopicsCreator = new StartupKafkaTopicsCreator(adminClient, kafkaProperties);
+    startupKafkaTopicsCreator = new StartupKafkaTopicsCreator(() -> adminClient, kafkaProperties);
     customizeAdminClientMock(existedTopics);
 
     // when
