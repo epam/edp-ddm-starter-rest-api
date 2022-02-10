@@ -32,6 +32,10 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.errors.TopicExistsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -42,6 +46,8 @@ public class StartupKafkaTopicsCreator {
 
   private static final String READ = "read";
   private static final String SEARCH = "search";
+
+  private final Logger log = LoggerFactory.getLogger(StartupKafkaTopicsCreator.class);
 
   private final Supplier<AdminClient> adminClientFactory;
   private final KafkaProperties kafkaProperties;
@@ -86,14 +92,20 @@ public class StartupKafkaTopicsCreator {
 
   private void createTopics(Set<String> topicNames, AdminClient kafkaAdminClient) {
     var createTopicsResult = kafkaAdminClient.createTopics(getNewTopics(topicNames));
+    createTopicsResult.values().forEach(this::handleTopicCreationResult);
+  }
+
+  private void handleTopicCreationResult(String topicName, KafkaFuture<Void> future) {
     try {
-      createTopicsResult.all().get(TOPIC_CREATION_TIMEOUT, TimeUnit.SECONDS);
+      future.get(TOPIC_CREATION_TIMEOUT, TimeUnit.SECONDS);
     } catch (Exception e) {
-      throw new CreateKafkaTopicException(
-              String.format(
-                      "Failed to create kafka topics %s in %d sec",
-                      topicNames, TOPIC_CREATION_TIMEOUT),
-              e);
+      if (e.getCause() instanceof TopicExistsException) {
+        log.warn("Topic {} was in missing topics list, but now exists", topicName);
+      } else {
+        throw new CreateKafkaTopicException(
+            String.format("Failed to create topic %s in %d sec", topicName, TOPIC_CREATION_TIMEOUT),
+            e);
+      }
     }
   }
 

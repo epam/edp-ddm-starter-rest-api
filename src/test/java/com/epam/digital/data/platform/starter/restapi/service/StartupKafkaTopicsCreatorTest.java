@@ -32,6 +32,8 @@ import com.epam.digital.data.platform.starter.restapi.config.properties.KafkaPro
 import com.epam.digital.data.platform.starter.restapi.config.properties.KafkaProperties.RetentionPolicyInDays;
 import com.epam.digital.data.platform.starter.restapi.config.properties.KafkaProperties.TopicProperties;
 import com.epam.digital.data.platform.starter.restapi.exception.CreateKafkaTopicException;
+
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +45,7 @@ import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.errors.TopicExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -112,6 +115,21 @@ class StartupKafkaTopicsCreatorTest {
         () -> startupKafkaTopicsCreator.createKafkaTopics());
   }
 
+  @Test
+  void shouldNotFailOnTopicExistsException() throws Exception {
+    doReturn(existedTopics).when(listTopicsFuture).get(anyLong(), any(TimeUnit.class));
+    when(listTopicsResult.names()).thenReturn(listTopicsFuture);
+    when(adminClient.listTopics()).thenReturn(listTopicsResult);
+    when(createTopicsResult.values()).thenReturn(Collections.singletonMap("some-topic", createTopicsFuture));
+    when(createTopicsFuture.get(anyLong(), any(TimeUnit.class)))
+        .thenThrow(new RuntimeException(new TopicExistsException("")));
+    when(adminClient.createTopics(anyCollection())).thenReturn(createTopicsResult);
+
+    startupKafkaTopicsCreator.createKafkaTopics();
+
+    verify(adminClient).createTopics(argumentCaptor.capture());
+  }
+
   @ParameterizedTest
   @MethodSource("provideParameters")
   void shouldSetCorrectRetentionPolicy(String topicsRootName, String retentionMs) throws Exception {
@@ -163,7 +181,7 @@ class StartupKafkaTopicsCreatorTest {
     doReturn(topics).when(listTopicsFuture).get(anyLong(), any(TimeUnit.class));
     when(listTopicsResult.names()).thenReturn(listTopicsFuture);
     when(adminClient.listTopics()).thenReturn(listTopicsResult);
-    when(createTopicsResult.all()).thenReturn(createTopicsFuture);
+    when(createTopicsResult.values()).thenReturn(Map.of("some-topic", createTopicsFuture));
     when(adminClient.createTopics(anyCollection())).thenReturn(createTopicsResult);
   }
 
